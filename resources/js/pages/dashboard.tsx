@@ -1,190 +1,215 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
-    Activity,
     AlertTriangle,
-    BatteryLow,
     Bell,
     CheckCircle2,
-    Clock,
-    HardDrive,
     MonitorCheck,
     MonitorOff,
     ShieldAlert,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { DataTable } from '@/components/endview/data-table';
-import type { DataTableColumn } from '@/components/endview/data-table';
+import { useCallback, useState } from 'react';
+import { DashboardHeader } from '@/components/endview/dashboard-header';
+import { DeviceDetailModal } from '@/components/endview/device-detail-modal';
+import { DeviceFilters } from '@/components/endview/device-filters';
+import { DeviceMonitoringList } from '@/components/endview/device-monitoring-list';
 import { EmptyState } from '@/components/endview/empty-state';
-import { HealthScore } from '@/components/endview/health-score';
 import { MiniBarChart } from '@/components/endview/mini-bar-chart';
 import { SectionPanel } from '@/components/endview/section-panel';
 import { SeverityBadge } from '@/components/endview/severity-badge';
 import { StatusBadge } from '@/components/endview/status-badge';
 import { SummaryCard } from '@/components/endview/summary-card';
 import { Button } from '@/components/ui/button';
-import { formatDateTime, formatPercent, formatRelative } from '@/lib/endview';
+import {
+    cleanParams,
+    formatDateTime,
+    formatPercent,
+    formatRelative,
+} from '@/lib/endview';
+import { modalDetail } from '@/actions/App/Http/Controllers/EndView/DeviceController';
 import { dashboard } from '@/routes';
 import type {
     AlertItem,
     CheckinItem,
-    DeviceSummary,
+    DeviceFilterOptions,
+    DeviceFilters as DeviceFiltersType,
+    DeviceListItem,
+    DeviceModalDetail,
     EventLogItem,
     MetricTrend,
-    RiskMetricDevice,
+    Paginated,
 } from '@/types';
 
+type DashboardSummary = {
+    total_devices: number;
+    online_devices: number;
+    offline_devices: number;
+    warning_devices: number;
+    critical_devices: number;
+    open_alerts: number;
+    acknowledged_alerts: number;
+    resolved_alerts: number;
+};
+
+type StatusBreakdown = {
+    status_code: string;
+    status_name: string;
+    count: number;
+};
+
 type DashboardProps = {
-    summary: {
-        total_devices: number;
-        online_devices: number;
-        offline_devices: number;
-        warning_devices: number;
-        critical_devices: number;
-        open_alerts: number;
-        acknowledged_alerts: number;
-        resolved_alerts: number;
-    };
-    status_breakdown: {
-        status_code: string;
-        status_name: string;
-        count: number;
-    }[];
+    last_updated_at: string | null;
+    summary: DashboardSummary;
+    status_breakdown: StatusBreakdown[];
     recent_alerts: AlertItem[];
-    recent_offline_devices: DeviceSummary[];
     latest_checkins: CheckinItem[];
-    risky_storage_devices: RiskMetricDevice[];
-    low_battery_health_devices: RiskMetricDevice[];
     recent_events: EventLogItem[];
     metric_trends: MetricTrend[];
+    devices: Paginated<DeviceListItem>;
+    filters: DeviceFiltersType;
+    options: DeviceFilterOptions;
 };
 
 export default function Dashboard({
+    last_updated_at,
     summary,
     status_breakdown,
     recent_alerts,
-    recent_offline_devices,
     latest_checkins,
-    risky_storage_devices,
-    low_battery_health_devices,
     recent_events,
     metric_trends,
+    devices,
+    filters,
+    options,
 }: DashboardProps) {
-    const alertColumns: DataTableColumn<AlertItem>[] = [
-        {
-            key: 'opened_at',
-            header: 'Opened',
-            render: (alert) => (
-                <div>
-                    <div className="font-medium">
-                        {formatRelative(alert.opened_at)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                        {formatDateTime(alert.opened_at)}
-                    </div>
-                </div>
-            ),
-        },
-        {
-            key: 'device',
-            header: 'Device',
-            render: (alert) =>
-                alert.device ? (
-                    <Link
-                        href={`/devices/${alert.device.id}`}
-                        className="font-medium hover:underline"
-                    >
-                        {alert.device.hostname}
-                    </Link>
-                ) : (
-                    'n/a'
-                ),
-        },
-        {
-            key: 'alert',
-            header: 'Alert',
-            render: (alert) => (
-                <div>
-                    <div className="font-medium">{alert.alert_name}</div>
-                    <div className="max-w-72 truncate text-xs text-muted-foreground">
-                        {alert.alert_message}
-                    </div>
-                </div>
-            ),
-        },
-        {
-            key: 'severity',
-            header: 'Severity',
-            render: (alert) => <SeverityBadge severity={alert.severity_code} />,
-        },
-        {
-            key: 'status',
-            header: 'Status',
-            render: (alert) => <StatusBadge status={alert.status_code} />,
-        },
-    ];
+    const [refreshing, setRefreshing] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedDevice, setSelectedDevice] =
+        useState<DeviceListItem | null>(null);
+    const [deviceDetail, setDeviceDetail] =
+        useState<DeviceModalDetail | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+    const [detailError, setDetailError] = useState<string | null>(null);
 
-    const checkinColumns: DataTableColumn<CheckinItem>[] = [
-        {
-            key: 'checked_in_at',
-            header: 'Check-in',
-            render: (checkin) => (
-                <div>
-                    <div className="font-medium">
-                        {formatRelative(checkin.checked_in_at)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                        {formatDateTime(checkin.checked_in_at)}
-                    </div>
-                </div>
-            ),
-        },
-        {
-            key: 'device',
-            header: 'Device',
-            render: (checkin) =>
-                checkin.device ? (
-                    <Link
-                        href={`/devices/${checkin.device.id}`}
-                        className="font-medium hover:underline"
-                    >
-                        {checkin.device.hostname}
-                    </Link>
-                ) : (
-                    'n/a'
-                ),
-        },
-        {
-            key: 'status',
-            header: 'Status',
-            render: (checkin) => <StatusBadge status={checkin.status_code} />,
-        },
-        {
-            key: 'ip',
-            header: 'IP',
-            render: (checkin) => checkin.ip_address ?? 'n/a',
-        },
-    ];
+    const refreshDashboard = () => {
+        setRefreshing(true);
+        router.reload({
+            preserveScroll: true,
+            onFinish: () => setRefreshing(false),
+        });
+    };
 
-    const maxStatus = Math.max(
-        1,
-        ...status_breakdown.map((status) => status.count),
-    );
+    const applyFilters = (
+        values: Record<string, string | number | boolean | null | undefined>,
+    ) => {
+        router.get(
+            dashboard.url(),
+            cleanParams({
+                ...values,
+                sort_by: filters.sort_by,
+                sort_direction: filters.sort_direction,
+            }),
+            {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const clearFilters = () => {
+        router.get(dashboard.url(), {}, { preserveScroll: true, replace: true });
+    };
+
+    const sortDevices = (
+        key:
+            | 'device_name'
+            | 'company'
+            | 'site'
+            | 'device_type'
+            | 'os_name'
+            | 'status_code'
+            | 'health_score'
+            | 'last_checkin_at',
+    ) => {
+        const direction =
+            filters.sort_by === key && filters.sort_direction === 'asc'
+                ? 'desc'
+                : 'asc';
+
+        router.get(
+            dashboard.url(),
+            cleanParams({
+                ...filters,
+                sort_by: key,
+                sort_direction: direction,
+            }),
+            {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const loadDeviceDetail = useCallback(async (device: DeviceListItem) => {
+        setSelectedDevice(device);
+        setDeviceDetail(null);
+        setDetailError(null);
+        setDetailLoading(true);
+
+        try {
+            const response = await fetch(modalDetail.url(device.id), {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('The device detail endpoint did not respond.');
+            }
+
+            setDeviceDetail((await response.json()) as DeviceModalDetail);
+        } catch (error) {
+            setDetailError(
+                error instanceof Error
+                    ? error.message
+                    : 'Unable to load device detail.',
+            );
+        } finally {
+            setDetailLoading(false);
+        }
+    }, []);
+
+    const openDeviceDetail = (device: DeviceListItem) => {
+        setModalOpen(true);
+        void loadDeviceDetail(device);
+    };
+
+    const closeDeviceDetail = (open: boolean) => {
+        setModalOpen(open);
+
+        if (!open) {
+            setSelectedDevice(null);
+            setDeviceDetail(null);
+            setDetailError(null);
+        }
+    };
 
     return (
         <>
-            <Head title="Dashboard" />
-            <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-normal">
-                        Endpoint Dashboard
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Fleet health, connectivity, and alert posture across
-                        monitored laptops and PCs.
-                    </p>
-                </div>
+            <Head title="EndView Dashboard" />
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+            <div className="flex flex-1 flex-col gap-5 bg-muted/20 p-4 sm:p-6 lg:p-8">
+                <DashboardHeader
+                    totalDevices={summary.total_devices}
+                    openAlerts={summary.open_alerts}
+                    lastUpdatedAt={last_updated_at}
+                    refreshing={refreshing}
+                    onRefresh={refreshDashboard}
+                />
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                     <SummaryCard
                         title="Total devices"
                         value={summary.total_devices}
@@ -219,232 +244,257 @@ export default function Dashboard({
                         icon={Bell}
                         tone="red"
                     />
-                    <SummaryCard
-                        title="Acknowledged"
-                        value={summary.acknowledged_alerts}
-                        icon={Clock}
-                        tone="amber"
-                    />
-                    <SummaryCard
-                        title="Resolved"
-                        value={summary.resolved_alerts}
-                        icon={CheckCircle2}
-                        tone="sky"
-                    />
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[1fr_1.25fr]">
-                    <SectionPanel title="Status Breakdown">
-                        <div className="space-y-4">
-                            {status_breakdown.map((status) => (
-                                <div key={status.status_code}>
-                                    <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <StatusBadge
-                                                status={status.status_code}
-                                            />
-                                            <span className="font-medium">
-                                                {status.status_name}
-                                            </span>
-                                        </div>
-                                        <span className="text-muted-foreground">
-                                            {status.count}
-                                        </span>
-                                    </div>
-                                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                        <div
-                                            className="h-full rounded-full bg-teal-500"
-                                            style={{
-                                                width: `${(status.count / maxStatus) * 100}%`,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                <DeviceFilters
+                    filters={filters}
+                    options={options}
+                    onApply={applyFilters}
+                    onClear={clearFilters}
+                />
+
+                <DeviceMonitoringList
+                    devices={devices}
+                    filters={filters}
+                    onSort={sortDevices}
+                    onSelectDevice={openDeviceDetail}
+                />
+
+                <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                    <SectionPanel
+                        title="Fleet Status"
+                        description="Current status distribution across monitored devices."
+                    >
+                        <StatusBreakdownPanel rows={status_breakdown} />
                     </SectionPanel>
 
                     <SectionPanel
                         title="Metric Trend"
-                        description="Daily average from recent snapshots"
+                        description="Daily average utilization from recent snapshots."
                     >
                         <div className="grid gap-4 md:grid-cols-3">
-                            <MiniBarChart
+                            <TrendCard
+                                label="CPU"
+                                color="bg-emerald-500"
                                 points={metric_trends.map((point) => ({
                                     label: point.label.slice(5),
                                     value: point.cpu_usage_percent,
                                 }))}
-                                color="bg-teal-500"
                             />
-                            <MiniBarChart
+                            <TrendCard
+                                label="RAM"
+                                color="bg-amber-500"
                                 points={metric_trends.map((point) => ({
                                     label: point.label.slice(5),
                                     value: point.ram_usage_percent,
                                 }))}
-                                color="bg-amber-500"
                             />
-                            <MiniBarChart
+                            <TrendCard
+                                label="Storage"
+                                color="bg-red-500"
                                 points={metric_trends.map((point) => ({
                                     label: point.label.slice(5),
                                     value: point.storage_usage_percent,
                                 }))}
-                                color="bg-red-500"
                             />
                         </div>
                     </SectionPanel>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                    <SectionPanel
-                        title="Recent Alerts"
-                        action={
-                            <Button asChild variant="outline" size="sm">
-                                <Link href="/alerts">View alerts</Link>
-                            </Button>
-                        }
-                    >
-                        <DataTable
-                            rows={recent_alerts}
-                            columns={alertColumns}
-                            getRowKey={(alert) => alert.id}
-                            emptyTitle="No recent alerts"
-                        />
-                    </SectionPanel>
-
-                    <SectionPanel
-                        title="Latest Check-ins"
-                        action={
-                            <Button asChild variant="outline" size="sm">
-                                <Link href="/check-ins">View check-ins</Link>
-                            </Button>
-                        }
-                    >
-                        <DataTable
-                            rows={latest_checkins}
-                            columns={checkinColumns}
-                            getRowKey={(checkin) => checkin.id}
-                            emptyTitle="No check-ins yet"
-                        />
-                    </SectionPanel>
+                <div className="grid gap-5 xl:grid-cols-3">
+                    <RecentAlertsPanel rows={recent_alerts} />
+                    <LatestCheckinsPanel rows={latest_checkins} />
+                    <RecentEventsPanel rows={recent_events} />
                 </div>
-
-                <div className="grid gap-4 xl:grid-cols-3">
-                    <RiskList
-                        title="Recent Offline Devices"
-                        icon={MonitorOff}
-                        rows={recent_offline_devices.map((device) => ({
-                            key: device.id,
-                            device,
-                            value: formatRelative(device.last_checkin_at),
-                        }))}
-                        emptyTitle="No offline devices"
-                    />
-                    <RiskList
-                        title="Risky Storage"
-                        icon={HardDrive}
-                        rows={risky_storage_devices.map((risk) => ({
-                            key: risk.device.id,
-                            device: risk.device,
-                            value: formatPercent(risk.value),
-                        }))}
-                        emptyTitle="No risky storage devices"
-                    />
-                    <RiskList
-                        title="Low Battery Health"
-                        icon={BatteryLow}
-                        rows={low_battery_health_devices.map((risk) => ({
-                            key: risk.device.id,
-                            device: risk.device,
-                            value: formatPercent(risk.value),
-                        }))}
-                        emptyTitle="No battery health risks"
-                    />
-                </div>
-
-                <SectionPanel title="Recent Events">
-                    {recent_events.length === 0 ? (
-                        <EmptyState title="No recent events" />
-                    ) : (
-                        <div className="divide-y">
-                            {recent_events.map((event) => (
-                                <div
-                                    key={event.id}
-                                    className="flex gap-3 py-3 first:pt-0 last:pb-0"
-                                >
-                                    <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
-                                        <Activity className="size-4 text-muted-foreground" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className="font-medium">
-                                                {event.event_type}
-                                            </span>
-                                            <span className="rounded-md border px-2 py-0.5 text-xs text-muted-foreground">
-                                                {event.event_source}
-                                            </span>
-                                        </div>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            {event.event_message}
-                                        </p>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {event.device?.hostname ?? 'System'}{' '}
-                                            - {formatDateTime(event.event_at)}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </SectionPanel>
             </div>
+
+            <DeviceDetailModal
+                open={modalOpen}
+                device={selectedDevice}
+                detail={deviceDetail}
+                loading={detailLoading}
+                error={detailError}
+                onRetry={() => {
+                    if (selectedDevice) {
+                        void loadDeviceDetail(selectedDevice);
+                    }
+                }}
+                onOpenChange={closeDeviceDetail}
+            />
         </>
     );
 }
 
-function RiskList({
-    title,
-    icon: Icon,
-    rows,
-    emptyTitle,
-}: {
-    title: string;
-    icon: LucideIcon;
-    rows: { key: string | number; device: DeviceSummary; value: string }[];
-    emptyTitle: string;
-}) {
+function StatusBreakdownPanel({ rows }: { rows: StatusBreakdown[] }) {
+    const maxStatus = Math.max(1, ...rows.map((status) => status.count));
+
+    if (rows.length === 0) {
+        return <EmptyState title="No status data available" />;
+    }
+
     return (
-        <SectionPanel title={title}>
+        <div className="space-y-4">
+            {rows.map((status) => (
+                <div key={status.status_code}>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <StatusBadge status={status.status_code} />
+                            <span className="truncate text-sm font-medium">
+                                {status.status_name}
+                            </span>
+                        </div>
+                        <span className="text-sm font-semibold">
+                            {status.count}
+                        </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                            className="h-full rounded-full bg-emerald-500"
+                            style={{
+                                width: `${(status.count / maxStatus) * 100}%`,
+                            }}
+                        />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function TrendCard({
+    label,
+    points,
+    color,
+}: {
+    label: string;
+    points: { label: string; value: number | null | undefined }[];
+    color: string;
+}) {
+    const latest = points.at(-1)?.value;
+
+    return (
+        <div className="rounded-xl border bg-background p-4 shadow-xs">
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold">{label}</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                    {formatPercent(latest)}
+                </span>
+            </div>
+            <MiniBarChart points={points} color={color} />
+        </div>
+    );
+}
+
+function RecentAlertsPanel({ rows }: { rows: AlertItem[] }) {
+    return (
+        <SectionPanel
+            title="Recent Alerts"
+            description="Latest opened alerts across the fleet."
+        >
             {rows.length === 0 ? (
-                <EmptyState title={emptyTitle} icon={Icon} />
+                <EmptyState title="No recent alerts" />
             ) : (
                 <div className="space-y-3">
-                    {rows.map((row) => (
-                        <Link
-                            key={row.key}
-                            href={`/devices/${row.device.id}`}
-                            className="flex items-center justify-between gap-3 rounded-md border bg-background p-3 hover:bg-muted/40"
+                    {rows.slice(0, 6).map((alert) => (
+                        <div
+                            key={alert.id}
+                            className="rounded-xl border bg-background p-3 shadow-xs"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="truncate text-sm font-semibold">
+                                        {alert.alert_name}
+                                    </div>
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                        {alert.device?.hostname ?? 'Unknown device'} ·{' '}
+                                        {formatRelative(alert.opened_at)}
+                                    </div>
+                                </div>
+                                <SeverityBadge
+                                    severity={alert.severity_code}
+                                />
+                            </div>
+                            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                                {alert.alert_message}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </SectionPanel>
+    );
+}
+
+function LatestCheckinsPanel({ rows }: { rows: CheckinItem[] }) {
+    return (
+        <SectionPanel
+            title="Latest Check-ins"
+            description="Most recent heartbeat records."
+        >
+            {rows.length === 0 ? (
+                <EmptyState title="No check-ins yet" />
+            ) : (
+                <div className="space-y-3">
+                    {rows.slice(0, 6).map((checkin) => (
+                        <div
+                            key={checkin.id}
+                            className="flex items-start justify-between gap-3 rounded-xl border bg-background p-3 shadow-xs"
                         >
                             <div className="min-w-0">
-                                <div className="truncate font-medium">
-                                    {row.device.hostname}
+                                <div className="truncate text-sm font-semibold">
+                                    {checkin.device?.hostname ?? 'Unknown device'}
                                 </div>
-                                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                    <StatusBadge
-                                        status={row.device.status_code}
-                                    />
-                                    <span>{row.device.site ?? 'No site'}</span>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                    {checkin.current_user_name ?? 'No user'} ·{' '}
+                                    {checkin.ip_address ?? 'No IP'}
                                 </div>
                             </div>
-                            <div className="flex min-w-28 items-center justify-end gap-3">
-                                <HealthScore
-                                    score={row.device.health_score}
-                                    compact
-                                />
-                                <span className="text-sm font-semibold">
-                                    {row.value}
+                            <div className="text-right">
+                                <StatusBadge status={checkin.status_code} />
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                    {formatRelative(checkin.checked_in_at)}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </SectionPanel>
+    );
+}
+
+function RecentEventsPanel({ rows }: { rows: EventLogItem[] }) {
+    return (
+        <SectionPanel
+            title="Event Timeline"
+            description="Latest endpoint and system events."
+        >
+            {rows.length === 0 ? (
+                <EmptyState title="No recent events" />
+            ) : (
+                <div className="space-y-3">
+                    {rows.slice(0, 6).map((event) => (
+                        <div
+                            key={event.id}
+                            className="rounded-xl border bg-background p-3 shadow-xs"
+                        >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                    <span className="truncate text-sm font-semibold">
+                                        {event.event_type}
+                                    </span>
+                                    <span className="rounded-full border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                        {event.event_source}
+                                    </span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                    {formatDateTime(event.event_at)}
                                 </span>
                             </div>
-                        </Link>
+                            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                                {event.event_message}
+                            </p>
+                        </div>
                     ))}
                 </div>
             )}

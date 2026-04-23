@@ -22,19 +22,19 @@ export function SummaryCard({
     }[tone];
 
     return (
-        <div className="rounded-lg border bg-card p-4">
-            <div className="flex items-center justify-between gap-3">
+        <div className="rounded-xl border bg-card/95 p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         {title}
                     </p>
-                    <p className="mt-2 text-2xl font-semibold tracking-normal text-foreground">
+                    <p className="mt-3 text-3xl font-semibold tracking-normal text-foreground">
                         {value}
                     </p>
                 </div>
                 <div
                     className={cn(
-                        'flex size-10 items-center justify-center rounded-md',
+                        'flex size-10 items-center justify-center rounded-lg shadow-xs',
                         toneClass,
                     )}
                 >
