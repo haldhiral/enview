@@ -8,12 +8,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard')->name('home');
 
-Route::get('dashboard', DashboardController::class)->name('dashboard');
-Route::get('devices', [DeviceController::class, 'index'])->name('devices.index');
-Route::get('devices/{device}', [DeviceController::class, 'show'])
-    ->whereNumber('device')
-    ->name('devices.show');
-Route::get('alerts', AlertController::class)->name('alerts.index');
-Route::get('check-ins', CheckinController::class)->name('checkins.index');
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('devices', [DeviceController::class, 'index'])->name('devices.index');
+    Route::get('devices/{device}/modal-detail', [DeviceController::class, 'modalDetail'])
+        ->whereNumber('device')
+        ->name('devices.modal-detail');
+    Route::get('devices/{device}', [DeviceController::class, 'show'])
+        ->whereNumber('device')
+        ->name('devices.show');
+    Route::get('alerts', AlertController::class)->name('alerts.index');
+    Route::get('check-ins', CheckinController::class)->name('checkins.index');
+});
 
 require __DIR__.'/settings.php';

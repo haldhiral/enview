@@ -20,4 +20,9 @@ class DeviceController extends Controller
     {
         return Inertia::render('devices/show', $deviceDetail->data($device));
     }
+
+    public function modalDetail(int $device, DeviceDetailService $deviceDetail): array
+    {
+        return $deviceDetail->data($device);
+    }
 }

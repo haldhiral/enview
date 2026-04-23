@@ -113,6 +113,16 @@ export type DeviceDetail = {
     };
 };
 
+export type DeviceModalDetail = {
+    device: DeviceDetail;
+    latest_metric: MetricSnapshot | null;
+    metric_history: MetricSnapshot[];
+    storage_snapshots: StorageSnapshot[];
+    checkins: CheckinItem[];
+    alerts: AlertItem[];
+    event_logs: EventLogItem[];
+};
+
 export type StorageSnapshot = {
     id: number;
     drive_name: string;

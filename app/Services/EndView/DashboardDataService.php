@@ -21,6 +21,7 @@ class DashboardDataService
         $devices = Device::query()->active();
 
         return [
+            'last_updated_at' => now()->toIso8601String(),
             'summary' => [
                 'total_devices' => (clone $devices)->count(),
                 'online_devices' => (clone $devices)->where('current_status_code', 'ONLINE')->count(),
