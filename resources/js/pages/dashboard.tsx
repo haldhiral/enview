@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Activity,
     AlertTriangle,
@@ -33,6 +33,7 @@ import {
     formatRelative,
     severityAccentClass,
     statusBarClass,
+    withBaseUrl,
 } from '@/lib/endview';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
@@ -100,6 +101,7 @@ export default function Dashboard({
     );
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
+    const { baseUrl } = usePage().props;
 
     const refreshDashboard = () => {
         setRefreshing(true);
@@ -165,35 +167,43 @@ export default function Dashboard({
         );
     };
 
-    const loadDeviceDetail = useCallback(async (device: DeviceListItem) => {
-        setSelectedDevice(device);
-        setDeviceDetail(null);
-        setDetailError(null);
-        setDetailLoading(true);
+    const loadDeviceDetail = useCallback(
+        async (device: DeviceListItem) => {
+            setSelectedDevice(device);
+            setDeviceDetail(null);
+            setDetailError(null);
+            setDetailLoading(true);
 
-        try {
-            const response = await fetch(modalDetail.url(device.id), {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
+            try {
+                const response = await fetch(
+                    withBaseUrl(baseUrl, modalDetail.url(device.id)),
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                );
 
-            if (!response.ok) {
-                throw new Error('The device detail endpoint did not respond.');
+                if (!response.ok) {
+                    throw new Error(
+                        'The device detail endpoint did not respond.',
+                    );
+                }
+
+                setDeviceDetail((await response.json()) as DeviceModalDetail);
+            } catch (error) {
+                setDetailError(
+                    error instanceof Error
+                        ? error.message
+                        : 'Unable to load device detail.',
+                );
+            } finally {
+                setDetailLoading(false);
             }
-
-            setDeviceDetail((await response.json()) as DeviceModalDetail);
-        } catch (error) {
-            setDetailError(
-                error instanceof Error
-                    ? error.message
-                    : 'Unable to load device detail.',
-            );
-        } finally {
-            setDetailLoading(false);
-        }
-    }, []);
+        },
+        [baseUrl],
+    );
 
     const openDeviceDetail = (device: DeviceListItem) => {
         setModalOpen(true);

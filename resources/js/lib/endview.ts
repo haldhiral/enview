@@ -81,6 +81,16 @@ export function formatMb(value: number | null | undefined): string {
     return `${value.toLocaleString()} MB`;
 }
 
+export function withBaseUrl(baseUrl: string, path: string): string {
+    const trimmedBase = baseUrl.replace(/\/+$/, '');
+
+    if (!trimmedBase) {
+        return path;
+    }
+
+    return `${trimmedBase}/${path.replace(/^\/+/, '')}`;
+}
+
 type QueryParam = string | number | boolean | null | undefined;
 
 export function cleanParams(
