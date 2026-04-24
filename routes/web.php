@@ -4,9 +4,10 @@ use App\Http\Controllers\EndView\AlertController;
 use App\Http\Controllers\EndView\CheckinController;
 use App\Http\Controllers\EndView\DashboardController;
 use App\Http\Controllers\EndView\DeviceController;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard')->name('home');
+Route::get('/', fn (): RedirectResponse => to_route('dashboard'))->name('home');
 
 Route::get('dashboard', DashboardController::class)->name('dashboard');
 Route::get('devices', [DeviceController::class, 'index'])->name('devices.index');

@@ -8,6 +8,7 @@ import {
     ShieldAlert,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { modalDetail } from '@/actions/App/Http/Controllers/EndView/DeviceController';
 import { DashboardHeader } from '@/components/endview/dashboard-header';
 import { DeviceDetailModal } from '@/components/endview/device-detail-modal';
 import { DeviceFilters } from '@/components/endview/device-filters';
@@ -18,14 +19,12 @@ import { SectionPanel } from '@/components/endview/section-panel';
 import { SeverityBadge } from '@/components/endview/severity-badge';
 import { StatusBadge } from '@/components/endview/status-badge';
 import { SummaryCard } from '@/components/endview/summary-card';
-import { Button } from '@/components/ui/button';
 import {
     cleanParams,
     formatDateTime,
     formatPercent,
     formatRelative,
 } from '@/lib/endview';
-import { modalDetail } from '@/actions/App/Http/Controllers/EndView/DeviceController';
 import { dashboard } from '@/routes';
 import type {
     AlertItem,
@@ -83,17 +82,18 @@ export default function Dashboard({
 }: DashboardProps) {
     const [refreshing, setRefreshing] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedDevice, setSelectedDevice] =
-        useState<DeviceListItem | null>(null);
-    const [deviceDetail, setDeviceDetail] =
-        useState<DeviceModalDetail | null>(null);
+    const [selectedDevice, setSelectedDevice] = useState<DeviceListItem | null>(
+        null,
+    );
+    const [deviceDetail, setDeviceDetail] = useState<DeviceModalDetail | null>(
+        null,
+    );
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
 
     const refreshDashboard = () => {
         setRefreshing(true);
         router.reload({
-            preserveScroll: true,
             onFinish: () => setRefreshing(false),
         });
     };
@@ -117,7 +117,11 @@ export default function Dashboard({
     };
 
     const clearFilters = () => {
-        router.get(dashboard.url(), {}, { preserveScroll: true, replace: true });
+        router.get(
+            dashboard.url(),
+            {},
+            { preserveScroll: true, replace: true },
+        );
     };
 
     const sortDevices = (
@@ -406,13 +410,12 @@ function RecentAlertsPanel({ rows }: { rows: AlertItem[] }) {
                                         {alert.alert_name}
                                     </div>
                                     <div className="mt-1 text-xs text-muted-foreground">
-                                        {alert.device?.hostname ?? 'Unknown device'} ·{' '}
-                                        {formatRelative(alert.opened_at)}
+                                        {alert.device?.hostname ??
+                                            'Unknown device'}{' '}
+                                        · {formatRelative(alert.opened_at)}
                                     </div>
                                 </div>
-                                <SeverityBadge
-                                    severity={alert.severity_code}
-                                />
+                                <SeverityBadge severity={alert.severity_code} />
                             </div>
                             <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
                                 {alert.alert_message}
@@ -442,7 +445,8 @@ function LatestCheckinsPanel({ rows }: { rows: CheckinItem[] }) {
                         >
                             <div className="min-w-0">
                                 <div className="truncate text-sm font-semibold">
-                                    {checkin.device?.hostname ?? 'Unknown device'}
+                                    {checkin.device?.hostname ??
+                                        'Unknown device'}
                                 </div>
                                 <div className="mt-1 text-xs text-muted-foreground">
                                     {checkin.current_user_name ?? 'No user'} ·{' '}

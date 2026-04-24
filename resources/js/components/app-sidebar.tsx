@@ -12,6 +12,9 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as alertsIndex } from '@/routes/alerts';
+import { index as checkinsIndex } from '@/routes/checkins';
+import { index as devicesIndex } from '@/routes/devices';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -22,17 +25,17 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Devices',
-        href: '/devices',
+        href: devicesIndex(),
         icon: MonitorCheck,
     },
     {
         title: 'Alerts',
-        href: '/alerts',
+        href: alertsIndex(),
         icon: Bell,
     },
     {
         title: 'Check-ins',
-        href: '/check-ins',
+        href: checkinsIndex(),
         icon: Activity,
     },
 ];

@@ -7,6 +7,8 @@ import { SectionPanel } from '@/components/endview/section-panel';
 import { StatusBadge } from '@/components/endview/status-badge';
 import { SummaryCard } from '@/components/endview/summary-card';
 import { formatDateTime, formatRelative } from '@/lib/endview';
+import { index as checkinsIndex } from '@/routes/checkins';
+import { show as showDevice } from '@/routes/devices';
 import type { CheckinItem, DeviceSummary } from '@/types';
 
 type CheckinsIndexProps = {
@@ -46,7 +48,7 @@ export default function CheckinsIndex({
             render: (checkin) =>
                 checkin.device ? (
                     <Link
-                        href={`/devices/${checkin.device.id}`}
+                        href={showDevice(checkin.device.id)}
                         className="font-semibold hover:underline"
                     >
                         {checkin.device.hostname}
@@ -89,7 +91,7 @@ export default function CheckinsIndex({
             render: (device) => (
                 <div>
                     <Link
-                        href={`/devices/${device.id}`}
+                        href={showDevice(device.id)}
                         className="font-semibold hover:underline"
                     >
                         {device.hostname}
@@ -205,7 +207,7 @@ CheckinsIndex.layout = {
     breadcrumbs: [
         {
             title: 'Check-ins',
-            href: '/check-ins',
+            href: checkinsIndex(),
         },
     ],
 };

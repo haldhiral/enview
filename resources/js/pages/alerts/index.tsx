@@ -11,6 +11,8 @@ import { StatusBadge } from '@/components/endview/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cleanParams, formatDateTime } from '@/lib/endview';
+import { index as alertsIndex } from '@/routes/alerts';
+import { show as showDevice } from '@/routes/devices';
 import type {
     AlertFilterOptions,
     AlertFilters,
@@ -33,7 +35,7 @@ export default function AlertsIndex({
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        router.get('/alerts', cleanParams(values), {
+        router.get(alertsIndex(), cleanParams(values), {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -51,7 +53,7 @@ export default function AlertsIndex({
         };
 
         setValues(emptyFilters);
-        router.get('/alerts', {}, { preserveScroll: true, replace: true });
+        router.get(alertsIndex(), {}, { preserveScroll: true, replace: true });
     };
 
     const columns: DataTableColumn<AlertItem>[] = [
@@ -66,7 +68,7 @@ export default function AlertsIndex({
             render: (alert) =>
                 alert.device ? (
                     <Link
-                        href={`/devices/${alert.device.id}`}
+                        href={showDevice(alert.device.id)}
                         className="font-semibold hover:underline"
                     >
                         {alert.device.hostname}
@@ -281,7 +283,7 @@ AlertsIndex.layout = {
     breadcrumbs: [
         {
             title: 'Alerts',
-            href: '/alerts',
+            href: alertsIndex(),
         },
     ],
 };

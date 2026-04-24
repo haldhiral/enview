@@ -27,6 +27,7 @@ import {
     formatPercent,
     formatRelative,
 } from '@/lib/endview';
+import { index as devicesIndex } from '@/routes/devices';
 import type {
     AlertItem,
     CheckinItem,
@@ -186,7 +187,7 @@ export default function DeviceShow({
                             size="sm"
                             className="mb-2 -ml-2"
                         >
-                            <Link href="/devices">
+                            <Link href={devicesIndex()}>
                                 <ArrowLeft className="size-4" />
                                 Devices
                             </Link>
@@ -556,7 +557,7 @@ DeviceShow.layout = {
     breadcrumbs: [
         {
             title: 'Devices',
-            href: '/devices',
+            href: devicesIndex(),
         },
         {
             title: 'Device Detail',

@@ -16,6 +16,7 @@ import {
     formatPercent,
     formatRelative,
 } from '@/lib/endview';
+import { index as devicesIndex, show as showDevice } from '@/routes/devices';
 import type {
     DeviceFilterOptions,
     DeviceFilters,
@@ -46,7 +47,7 @@ export default function DevicesIndex({
     const applyFilters = (
         next: Record<string, string | number | boolean | null | undefined>,
     ) => {
-        router.get('/devices', cleanParams(next), {
+        router.get(devicesIndex(), cleanParams(next), {
             preserveScroll: true,
             preserveState: true,
             replace: true,
@@ -71,7 +72,7 @@ export default function DevicesIndex({
             device_type: '',
             os_name: '',
         });
-        router.get('/devices', {}, { preserveScroll: true, replace: true });
+        router.get(devicesIndex(), {}, { preserveScroll: true, replace: true });
     };
 
     const sort = (key: string) => {
@@ -95,7 +96,7 @@ export default function DevicesIndex({
             render: (device) => (
                 <div>
                     <Link
-                        href={`/devices/${device.id}`}
+                        href={showDevice(device.id)}
                         className="font-semibold hover:underline"
                     >
                         {device.device_name}
@@ -202,7 +203,7 @@ export default function DevicesIndex({
             header: 'Actions',
             render: (device) => (
                 <Button asChild variant="outline" size="sm">
-                    <Link href={`/devices/${device.id}`}>
+                    <Link href={showDevice(device.id)}>
                         <Eye className="size-4" />
                         View
                     </Link>
@@ -404,7 +405,7 @@ DevicesIndex.layout = {
     breadcrumbs: [
         {
             title: 'Devices',
-            href: '/devices',
+            href: devicesIndex(),
         },
     ],
 };
