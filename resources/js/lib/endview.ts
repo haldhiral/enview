@@ -120,6 +120,54 @@ export function statusClass(status: string | null | undefined): string {
     });
 }
 
+export function statusDotClass(status: string | null | undefined): string {
+    return clsx({
+        'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]':
+            status === 'ONLINE',
+        'bg-zinc-400': status === 'OFFLINE',
+        'bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.18)]':
+            status === 'WARNING' || status === 'ACK',
+        'bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.18)]':
+            status === 'CRITICAL' || status === 'OPEN',
+        'bg-sky-500': status === 'RESOLVED',
+        'bg-muted-foreground':
+            !status ||
+            ![
+                'ONLINE',
+                'OFFLINE',
+                'WARNING',
+                'CRITICAL',
+                'OPEN',
+                'ACK',
+                'RESOLVED',
+            ].includes(status),
+    });
+}
+
+export function statusBarClass(status: string | null | undefined): string {
+    return clsx({
+        'bg-gradient-to-r from-emerald-400 to-emerald-500': status === 'ONLINE',
+        'bg-gradient-to-r from-zinc-300 to-zinc-400 dark:from-zinc-600 dark:to-zinc-500':
+            status === 'OFFLINE',
+        'bg-gradient-to-r from-amber-400 to-amber-500':
+            status === 'WARNING' || status === 'ACK',
+        'bg-gradient-to-r from-red-400 to-red-500':
+            status === 'CRITICAL' || status === 'OPEN',
+        'bg-gradient-to-r from-sky-400 to-sky-500': status === 'RESOLVED',
+        'bg-gradient-to-r from-zinc-300 to-zinc-400':
+            !status ||
+            ![
+                'ONLINE',
+                'OFFLINE',
+                'WARNING',
+                'CRITICAL',
+                'OPEN',
+                'ACK',
+                'RESOLVED',
+            ].includes(status),
+    });
+}
+
 export function severityClass(severity: string | null | undefined): string {
     return clsx({
         'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300':
@@ -133,18 +181,30 @@ export function severityClass(severity: string | null | undefined): string {
     });
 }
 
+export function severityAccentClass(
+    severity: string | null | undefined,
+): string {
+    return clsx({
+        'border-l-sky-500': severity === 'INFO',
+        'border-l-amber-500': severity === 'WARNING',
+        'border-l-red-500': severity === 'CRITICAL',
+        'border-l-border':
+            !severity || !['INFO', 'WARNING', 'CRITICAL'].includes(severity),
+    });
+}
+
 export function scoreClass(score: number | null | undefined): string {
     if (score === null || score === undefined) {
         return 'bg-muted';
     }
 
     if (score >= 85) {
-        return 'bg-emerald-500';
+        return 'bg-gradient-to-r from-emerald-400 to-emerald-500';
     }
 
     if (score >= 65) {
-        return 'bg-amber-500';
+        return 'bg-gradient-to-r from-amber-400 to-amber-500';
     }
 
-    return 'bg-red-500';
+    return 'bg-gradient-to-r from-red-400 to-red-500';
 }

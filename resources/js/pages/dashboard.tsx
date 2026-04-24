@@ -1,12 +1,19 @@
 import { Head, router } from '@inertiajs/react';
 import {
+    Activity,
     AlertTriangle,
     Bell,
     CheckCircle2,
+    Cpu,
+    HardDrive,
+    MemoryStick,
     MonitorCheck,
     MonitorOff,
     ShieldAlert,
+    TrendingDown,
+    TrendingUp,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { modalDetail } from '@/actions/App/Http/Controllers/EndView/DeviceController';
 import { DashboardHeader } from '@/components/endview/dashboard-header';
@@ -24,7 +31,10 @@ import {
     formatDateTime,
     formatPercent,
     formatRelative,
+    severityAccentClass,
+    statusBarClass,
 } from '@/lib/endview';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type {
     AlertItem,
@@ -204,7 +214,7 @@ export default function Dashboard({
         <>
             <Head title="EndView Dashboard" />
 
-            <div className="flex flex-1 flex-col gap-5 bg-muted/20 p-4 sm:p-6 lg:p-8">
+            <div className="relative flex flex-1 flex-col gap-5 bg-gradient-to-b from-muted/30 via-background to-muted/20 p-4 sm:p-6 lg:p-8">
                 <DashboardHeader
                     totalDevices={summary.total_devices}
                     openAlerts={summary.open_alerts}
@@ -218,35 +228,42 @@ export default function Dashboard({
                         title="Total devices"
                         value={summary.total_devices}
                         icon={MonitorCheck}
+                        tone="sky"
+                        hint="All enrolled endpoints"
                     />
                     <SummaryCard
                         title="Online"
                         value={summary.online_devices}
                         icon={CheckCircle2}
                         tone="green"
+                        hint={`${onlinePercent(summary)}% of fleet`}
                     />
                     <SummaryCard
                         title="Offline"
                         value={summary.offline_devices}
                         icon={MonitorOff}
+                        hint="Not reporting"
                     />
                     <SummaryCard
                         title="Warning"
                         value={summary.warning_devices}
                         icon={AlertTriangle}
                         tone="amber"
+                        hint="Degraded health"
                     />
                     <SummaryCard
                         title="Critical"
                         value={summary.critical_devices}
                         icon={ShieldAlert}
                         tone="red"
+                        hint="Immediate attention"
                     />
                     <SummaryCard
                         title="Open alerts"
                         value={summary.open_alerts}
                         icon={Bell}
                         tone="red"
+                        hint={`${summary.acknowledged_alerts} ack'd`}
                     />
                 </div>
 
@@ -269,7 +286,10 @@ export default function Dashboard({
                         title="Fleet Status"
                         description="Current status distribution across monitored devices."
                     >
-                        <StatusBreakdownPanel rows={status_breakdown} />
+                        <StatusBreakdownPanel
+                            rows={status_breakdown}
+                            total={summary.total_devices}
+                        />
                     </SectionPanel>
 
                     <SectionPanel
@@ -279,6 +299,7 @@ export default function Dashboard({
                         <div className="grid gap-4 md:grid-cols-3">
                             <TrendCard
                                 label="CPU"
+                                icon={Cpu}
                                 color="bg-emerald-500"
                                 points={metric_trends.map((point) => ({
                                     label: point.label.slice(5),
@@ -287,6 +308,7 @@ export default function Dashboard({
                             />
                             <TrendCard
                                 label="RAM"
+                                icon={MemoryStick}
                                 color="bg-amber-500"
                                 points={metric_trends.map((point) => ({
                                     label: point.label.slice(5),
@@ -295,6 +317,7 @@ export default function Dashboard({
                             />
                             <TrendCard
                                 label="Storage"
+                                icon={HardDrive}
                                 color="bg-red-500"
                                 points={metric_trends.map((point) => ({
                                     label: point.label.slice(5),
@@ -329,60 +352,133 @@ export default function Dashboard({
     );
 }
 
-function StatusBreakdownPanel({ rows }: { rows: StatusBreakdown[] }) {
-    const maxStatus = Math.max(1, ...rows.map((status) => status.count));
+function onlinePercent(summary: DashboardSummary): number {
+    if (!summary.total_devices) {
+        return 0;
+    }
 
+    return Math.round((summary.online_devices / summary.total_devices) * 100);
+}
+
+function StatusBreakdownPanel({
+    rows,
+    total,
+}: {
+    rows: StatusBreakdown[];
+    total: number;
+}) {
     if (rows.length === 0) {
         return <EmptyState title="No status data available" />;
     }
 
+    const sum = Math.max(1, total, ...rows.map((s) => s.count));
+
     return (
         <div className="space-y-4">
-            {rows.map((status) => (
-                <div key={status.status_code}>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-2">
-                            <StatusBadge status={status.status_code} />
-                            <span className="truncate text-sm font-medium">
-                                {status.status_name}
-                            </span>
+            {rows.map((status) => {
+                const percent = Math.round((status.count / sum) * 100);
+
+                return (
+                    <div
+                        key={status.status_code}
+                        className="group rounded-lg px-1 py-1 transition hover:bg-muted/30"
+                    >
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                                <StatusBadge status={status.status_code} />
+                                <span className="truncate text-sm font-medium text-foreground">
+                                    {status.status_name}
+                                </span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5 tabular-nums">
+                                <span className="text-sm font-semibold text-foreground">
+                                    {status.count}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    · {percent}%
+                                </span>
+                            </div>
                         </div>
-                        <span className="text-sm font-semibold">
-                            {status.count}
-                        </span>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted ring-1 ring-inset ring-border/40">
+                            <div
+                                className={cn(
+                                    'h-full rounded-full transition-all duration-500 ease-out',
+                                    statusBarClass(status.status_code),
+                                )}
+                                style={{
+                                    width: `${(status.count / sum) * 100}%`,
+                                }}
+                            />
+                        </div>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                        <div
-                            className="h-full rounded-full bg-emerald-500"
-                            style={{
-                                width: `${(status.count / maxStatus) * 100}%`,
-                            }}
-                        />
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
 
 function TrendCard({
     label,
+    icon: Icon,
     points,
     color,
 }: {
     label: string;
+    icon: LucideIcon;
     points: { label: string; value: number | null | undefined }[];
     color: string;
 }) {
     const latest = points.at(-1)?.value;
+    const previous = points.at(-2)?.value;
+
+    let delta: number | null = null;
+
+    if (
+        latest !== null &&
+        latest !== undefined &&
+        previous !== null &&
+        previous !== undefined
+    ) {
+        delta = latest - previous;
+    }
+
+    const up = delta !== null && delta > 0.5;
+    const down = delta !== null && delta < -0.5;
 
     return (
-        <div className="rounded-xl border bg-background p-4 shadow-xs">
+        <div className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-background to-muted/30 p-4 shadow-xs transition hover:shadow-md">
             <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{label}</span>
-                <span className="text-sm font-medium text-muted-foreground">
-                    {formatPercent(latest)}
-                </span>
+                <div className="flex items-center gap-2">
+                    <div className="flex size-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        <Icon className="size-3.5" />
+                    </div>
+                    <span className="text-sm font-semibold tracking-tight">
+                        {label}
+                    </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="text-lg font-bold tabular-nums text-foreground">
+                        {formatPercent(latest)}
+                    </span>
+                    {delta !== null && (
+                        <span
+                            className={cn(
+                                'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                                up &&
+                                    'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300',
+                                down &&
+                                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                                !up &&
+                                    !down &&
+                                    'bg-muted text-muted-foreground',
+                            )}
+                        >
+                            {up && <TrendingUp className="size-3" />}
+                            {down && <TrendingDown className="size-3" />}
+                            {Math.abs(delta).toFixed(0)}%
+                        </span>
+                    )}
+                </div>
             </div>
             <MiniBarChart points={points} color={color} />
         </div>
@@ -396,23 +492,31 @@ function RecentAlertsPanel({ rows }: { rows: AlertItem[] }) {
             description="Latest opened alerts across the fleet."
         >
             {rows.length === 0 ? (
-                <EmptyState title="No recent alerts" />
+                <EmptyState title="No recent alerts" icon={Bell} />
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                     {rows.slice(0, 6).map((alert) => (
                         <div
                             key={alert.id}
-                            className="rounded-xl border bg-background p-3 shadow-xs"
+                            className={cn(
+                                'rounded-lg border border-l-[3px] bg-background p-3 shadow-xs transition hover:-translate-y-0.5 hover:bg-muted/20 hover:shadow-sm',
+                                severityAccentClass(alert.severity_code),
+                            )}
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <div className="truncate text-sm font-semibold">
+                                    <div className="truncate text-sm font-semibold text-foreground">
                                         {alert.alert_name}
                                     </div>
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                        {alert.device?.hostname ??
-                                            'Unknown device'}{' '}
-                                        · {formatRelative(alert.opened_at)}
+                                    <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <span className="truncate font-medium">
+                                            {alert.device?.hostname ??
+                                                'Unknown device'}
+                                        </span>
+                                        <span className="size-1 rounded-full bg-border" />
+                                        <span>
+                                            {formatRelative(alert.opened_at)}
+                                        </span>
                                     </div>
                                 </div>
                                 <SeverityBadge severity={alert.severity_code} />
@@ -435,27 +539,32 @@ function LatestCheckinsPanel({ rows }: { rows: CheckinItem[] }) {
             description="Most recent heartbeat records."
         >
             {rows.length === 0 ? (
-                <EmptyState title="No check-ins yet" />
+                <EmptyState title="No check-ins yet" icon={Activity} />
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                     {rows.slice(0, 6).map((checkin) => (
                         <div
                             key={checkin.id}
-                            className="flex items-start justify-between gap-3 rounded-xl border bg-background p-3 shadow-xs"
+                            className="flex items-start justify-between gap-3 rounded-lg border bg-background p-3 shadow-xs transition hover:-translate-y-0.5 hover:bg-muted/20 hover:shadow-sm"
                         >
                             <div className="min-w-0">
-                                <div className="truncate text-sm font-semibold">
+                                <div className="truncate text-sm font-semibold text-foreground">
                                     {checkin.device?.hostname ??
                                         'Unknown device'}
                                 </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                    {checkin.current_user_name ?? 'No user'} ·{' '}
-                                    {checkin.ip_address ?? 'No IP'}
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                    <span className="font-medium">
+                                        {checkin.current_user_name ?? 'No user'}
+                                    </span>
+                                    <span className="size-1 rounded-full bg-border" />
+                                    <span className="font-mono">
+                                        {checkin.ip_address ?? 'No IP'}
+                                    </span>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="flex shrink-0 flex-col items-end gap-1">
                                 <StatusBadge status={checkin.status_code} />
-                                <div className="mt-1 text-xs text-muted-foreground">
+                                <div className="text-[11px] text-muted-foreground">
                                     {formatRelative(checkin.checked_in_at)}
                                 </div>
                             </div>
@@ -476,22 +585,26 @@ function RecentEventsPanel({ rows }: { rows: EventLogItem[] }) {
             {rows.length === 0 ? (
                 <EmptyState title="No recent events" />
             ) : (
-                <div className="space-y-3">
+                <div className="relative space-y-2.5 pl-4 before:absolute before:left-1 before:top-2 before:bottom-2 before:w-px before:bg-gradient-to-b before:from-border before:via-border before:to-transparent">
                     {rows.slice(0, 6).map((event) => (
                         <div
                             key={event.id}
-                            className="rounded-xl border bg-background p-3 shadow-xs"
+                            className="relative rounded-lg border bg-background p-3 shadow-xs transition hover:-translate-y-0.5 hover:bg-muted/20 hover:shadow-sm"
                         >
+                            <span
+                                aria-hidden="true"
+                                className="absolute -left-[13px] top-4 size-2.5 rounded-full border-2 border-background bg-sky-500 shadow-sm"
+                            />
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                    <span className="truncate text-sm font-semibold">
+                                    <span className="truncate text-sm font-semibold text-foreground">
                                         {event.event_type}
                                     </span>
-                                    <span className="rounded-full border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                    <span className="rounded-full border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                         {event.event_source}
                                     </span>
                                 </div>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-[11px] tabular-nums text-muted-foreground">
                                     {formatDateTime(event.event_at)}
                                 </span>
                             </div>

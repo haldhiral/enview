@@ -55,21 +55,35 @@ export function DeviceFilters({
 
     const activeFilterCount = Object.values(values).filter(Boolean).length;
 
+    const hasActive = activeFilterCount > 0;
+
     return (
-        <section className="rounded-xl border bg-card/95 shadow-sm">
-            <div className="flex flex-col gap-2 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h2 className="text-base font-semibold tracking-normal">
-                        Device Filters
-                    </h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Narrow the console by status, company, site, type, or
-                        operating system.
-                    </p>
+        <section className="overflow-hidden rounded-xl border bg-card/95 shadow-sm">
+            <div className="flex flex-col gap-2 border-b bg-gradient-to-r from-muted/40 via-card to-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                    <span
+                        aria-hidden="true"
+                        className="mt-1 h-6 w-1 rounded-full bg-gradient-to-b from-sky-500 to-emerald-500"
+                    />
+                    <div>
+                        <h2 className="text-base font-semibold tracking-tight text-foreground">
+                            Device Filters
+                        </h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Narrow the console by status, company, site, type, or
+                            operating system.
+                        </p>
+                    </div>
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs">
+                <div
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
+                        hasActive
+                            ? 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300'
+                            : 'bg-background text-muted-foreground'
+                    }`}
+                >
                     <SlidersHorizontal className="size-3.5" />
-                    {activeFilterCount} active filters
+                    {activeFilterCount} active {activeFilterCount === 1 ? 'filter' : 'filters'}
                 </div>
             </div>
 

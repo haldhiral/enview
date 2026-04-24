@@ -47,19 +47,31 @@ export function DeviceMonitoringList({
     onSelectDevice: (device: DeviceListItem) => void;
 }) {
     return (
-        <section className="rounded-xl border bg-card/95 shadow-sm">
-            <div className="flex flex-col gap-2 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h2 className="text-base font-semibold tracking-normal">
-                        Device Monitor
-                    </h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Click any device to inspect full detail in a modal
-                        without leaving the dashboard.
-                    </p>
+        <section className="overflow-hidden rounded-xl border bg-card/95 shadow-sm">
+            <div className="flex flex-col gap-2 border-b bg-gradient-to-r from-muted/40 via-card to-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                    <span
+                        aria-hidden="true"
+                        className="mt-1 h-6 w-1 rounded-full bg-gradient-to-b from-sky-500 to-emerald-500"
+                    />
+                    <div>
+                        <h2 className="text-base font-semibold tracking-tight text-foreground">
+                            Device Monitor
+                        </h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Click any device to inspect full detail in a modal
+                            without leaving the dashboard.
+                        </p>
+                    </div>
                 </div>
-                <div className="rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs">
-                    {devices.total} devices in scope
+                <div className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium shadow-xs">
+                    <span className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
+                    <span className="font-semibold tabular-nums text-foreground">
+                        {devices.total}
+                    </span>
+                    <span className="text-muted-foreground">
+                        devices in scope
+                    </span>
                 </div>
             </div>
 
@@ -75,7 +87,7 @@ export function DeviceMonitoringList({
                     <div className="hidden overflow-x-auto xl:block">
                         <table className="w-full min-w-[1260px] text-left">
                             <thead>
-                                <tr className="border-b bg-muted/30 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                <tr className="border-b bg-muted/40 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     {sortableHeaders.map((header) => (
                                         <th
                                             key={header.key}
@@ -113,17 +125,21 @@ export function DeviceMonitoringList({
                                                 onSelectDevice(device);
                                             }
                                         }}
-                                        className="border-b transition hover:bg-muted/25 focus-visible:bg-muted/25 focus-visible:outline-none"
+                                        className="group cursor-pointer border-b transition even:bg-muted/10 hover:bg-sky-50/50 focus-visible:bg-sky-50/50 focus-visible:outline-none dark:hover:bg-sky-950/20 dark:focus-visible:bg-sky-950/20"
                                     >
-                                        <td className="px-4 py-4 align-top">
+                                        <td className="relative px-4 py-4 align-top">
+                                            <span
+                                                aria-hidden="true"
+                                                className="absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-sky-500 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+                                            />
                                             <div className="min-w-0">
-                                                <div className="truncate text-sm font-semibold text-foreground">
+                                                <div className="truncate text-sm font-semibold text-foreground transition group-hover:text-sky-700 dark:group-hover:text-sky-300">
                                                     {device.device_name}
                                                 </div>
                                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                                    <span>{device.hostname}</span>
+                                                    <span className="font-mono">{device.hostname}</span>
                                                     <span className="size-1 rounded-full bg-border" />
-                                                    <span>{device.ip_address ?? 'No IP'}</span>
+                                                    <span className="font-mono">{device.ip_address ?? 'No IP'}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -227,7 +243,7 @@ export function DeviceMonitoringList({
                                 key={device.id}
                                 type="button"
                                 onClick={() => onSelectDevice(device)}
-                                className="grid gap-4 rounded-xl border bg-background p-4 text-left shadow-xs transition hover:bg-muted/20"
+                                className="grid gap-4 rounded-xl border bg-background p-4 text-left shadow-xs transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-md dark:hover:border-sky-900/60"
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="min-w-0">

@@ -18,12 +18,19 @@ export function MetricMiniBar({
     return (
         <div className={cn('min-w-24', className)}>
             <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-medium">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="text-foreground">{formatPercent(value)}</span>
+                <span className="uppercase tracking-wider text-muted-foreground">
+                    {label}
+                </span>
+                <span className="tabular-nums text-foreground">
+                    {formatPercent(value)}
+                </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted/70 ring-1 ring-inset ring-border/40">
                 <div
-                    className={cn('h-full rounded-full', scoreClass(toneScore))}
+                    className={cn(
+                        'h-full rounded-full transition-all duration-500 ease-out',
+                        scoreClass(toneScore),
+                    )}
                     style={{ width: `${width}%` }}
                 />
             </div>
