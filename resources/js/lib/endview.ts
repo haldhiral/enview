@@ -88,6 +88,10 @@ export function withBaseUrl(baseUrl: string, path: string): string {
         return path;
     }
 
+    if (path === trimmedBase || path.startsWith(`${trimmedBase}/`)) {
+        return path;
+    }
+
     return `${trimmedBase}/${path.replace(/^\/+/, '')}`;
 }
 

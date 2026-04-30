@@ -1,4 +1,11 @@
+import { Info } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 type Tone = 'neutral' | 'green' | 'amber' | 'red' | 'sky';
@@ -50,12 +57,14 @@ export function SummaryCard({
     icon: Icon,
     tone = 'neutral',
     hint,
+    info,
 }: {
     title: string;
     value: number | string;
     icon: LucideIcon;
     tone?: Tone;
     hint?: string;
+    info?: string;
 }) {
     const styles = toneStyles[tone];
 
@@ -76,9 +85,29 @@ export function SummaryCard({
 
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        {title}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            {title}
+                        </p>
+                        {info && (
+                            <TooltipProvider delayDuration={150}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            aria-label={`About ${title}`}
+                                            className="flex size-4 items-center justify-center rounded-full text-muted-foreground/60 transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                                        >
+                                            <Info className="size-3" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-[16rem] leading-relaxed">
+                                        {info}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                    </div>
                     <p
                         className={cn(
                             'mt-3 text-3xl font-semibold tabular-nums tracking-tight',

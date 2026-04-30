@@ -3,12 +3,16 @@ import {
     Activity,
     AlertTriangle,
     Bell,
+    CalendarClock,
     CheckCircle2,
     Cpu,
+    Gauge,
     HardDrive,
+    History,
     MemoryStick,
     MonitorCheck,
     MonitorOff,
+    PieChart,
     ShieldAlert,
     TrendingDown,
     TrendingUp,
@@ -16,6 +20,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { modalDetail } from '@/actions/App/Http/Controllers/EndView/DeviceController';
+import { DashboardFooter } from '@/components/endview/dashboard-footer';
+import { DashboardGuide } from '@/components/endview/dashboard-guide';
 import { DashboardHeader } from '@/components/endview/dashboard-header';
 import { DeviceDetailModal } from '@/components/endview/device-detail-modal';
 import { DeviceFilters } from '@/components/endview/device-filters';
@@ -233,6 +239,8 @@ export default function Dashboard({
                     onRefresh={refreshDashboard}
                 />
 
+                <DashboardGuide />
+
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                     <SummaryCard
                         title="Total devices"
@@ -240,6 +248,7 @@ export default function Dashboard({
                         icon={MonitorCheck}
                         tone="sky"
                         hint="All enrolled endpoints"
+                        info="Every endpoint enrolled in EnView, regardless of online state."
                     />
                     <SummaryCard
                         title="Online"
@@ -247,12 +256,14 @@ export default function Dashboard({
                         icon={CheckCircle2}
                         tone="green"
                         hint={`${onlinePercent(summary)}% of fleet`}
+                        info="Devices that have checked in recently and are reporting healthy."
                     />
                     <SummaryCard
                         title="Offline"
                         value={summary.offline_devices}
                         icon={MonitorOff}
                         hint="Not reporting"
+                        info="Devices that have stopped sending heartbeats. Investigate if the count is rising."
                     />
                     <SummaryCard
                         title="Warning"
@@ -260,6 +271,7 @@ export default function Dashboard({
                         icon={AlertTriangle}
                         tone="amber"
                         hint="Degraded health"
+                        info="Devices with elevated CPU, RAM, or storage usage trending toward a critical threshold."
                     />
                     <SummaryCard
                         title="Critical"
@@ -267,6 +279,7 @@ export default function Dashboard({
                         icon={ShieldAlert}
                         tone="red"
                         hint="Immediate attention"
+                        info="Devices breaching critical thresholds — review and remediate as soon as possible."
                     />
                     <SummaryCard
                         title="Open alerts"
@@ -274,6 +287,7 @@ export default function Dashboard({
                         icon={Bell}
                         tone="red"
                         hint={`${summary.acknowledged_alerts} ack'd`}
+                        info="Alerts that are unresolved. The hint shows how many have been acknowledged."
                     />
                 </div>
 
@@ -295,6 +309,7 @@ export default function Dashboard({
                     <SectionPanel
                         title="Fleet Status"
                         description="Current status distribution across monitored devices."
+                        icon={PieChart}
                     >
                         <StatusBreakdownPanel
                             rows={status_breakdown}
@@ -304,7 +319,8 @@ export default function Dashboard({
 
                     <SectionPanel
                         title="Metric Trend"
-                        description="Daily average utilization from recent snapshots."
+                        description="Daily average utilization from recent snapshots — lower is better."
+                        icon={Gauge}
                     >
                         <div className="grid gap-4 md:grid-cols-3">
                             <TrendCard
@@ -343,6 +359,8 @@ export default function Dashboard({
                     <LatestCheckinsPanel rows={latest_checkins} />
                     <RecentEventsPanel rows={recent_events} />
                 </div>
+
+                <DashboardFooter />
             </div>
 
             <DeviceDetailModal
@@ -500,6 +518,7 @@ function RecentAlertsPanel({ rows }: { rows: AlertItem[] }) {
         <SectionPanel
             title="Recent Alerts"
             description="Latest opened alerts across the fleet."
+            icon={Bell}
         >
             {rows.length === 0 ? (
                 <EmptyState title="No recent alerts" icon={Bell} />
@@ -547,6 +566,7 @@ function LatestCheckinsPanel({ rows }: { rows: CheckinItem[] }) {
         <SectionPanel
             title="Latest Check-ins"
             description="Most recent heartbeat records."
+            icon={CalendarClock}
         >
             {rows.length === 0 ? (
                 <EmptyState title="No check-ins yet" icon={Activity} />
@@ -591,6 +611,7 @@ function RecentEventsPanel({ rows }: { rows: EventLogItem[] }) {
         <SectionPanel
             title="Event Timeline"
             description="Latest endpoint and system events."
+            icon={History}
         >
             {rows.length === 0 ? (
                 <EmptyState title="No recent events" />

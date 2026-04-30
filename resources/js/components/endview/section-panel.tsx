@@ -1,14 +1,17 @@
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export function SectionPanel({
     title,
     description,
     action,
+    icon: Icon,
     children,
 }: {
     title: string;
     description?: string;
     action?: ReactNode;
+    icon?: LucideIcon;
     children: ReactNode;
 }) {
     return (
@@ -20,7 +23,13 @@ export function SectionPanel({
                         className="mt-1 h-6 w-1 rounded-full bg-gradient-to-b from-sky-500 to-emerald-500"
                     />
                     <div>
-                        <h2 className="text-base font-semibold tracking-tight text-foreground">
+                        <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground">
+                            {Icon && (
+                                <Icon
+                                    aria-hidden="true"
+                                    className="size-4 text-sky-600 dark:text-sky-300"
+                                />
+                            )}
                             {title}
                         </h2>
                         {description && (
